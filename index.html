@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Me conoces? 💕</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rose:    #e8a0a0;
+    --deep:    #b05070;
+    --cream:   #fdf6f0;
+    --warm:    #f5e6d8;
+    --text:    #3a2030;
+    --soft:    #c9828e;
+    --card:    rgba(255,255,255,0.72);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── Fondo animado de partículas ── */
+  .bg-layer {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse at 20% 10%, #f9d6d6 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 80%, #fce4d0 0%, transparent 55%),
+      radial-gradient(ellipse at 60% 20%, #f8dde8 0%, transparent 40%),
+      var(--cream);
+  }
+
+  .petals { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+  .petal {
+    position:absolute; font-size:1.2rem; opacity:0;
+    animation: fall linear infinite;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-60px) rotate(0deg); opacity:0.7; }
+    100% { transform: translateY(110vh)  rotate(360deg); opacity:0; }
+  }
+
+  /* ── Contenedor principal ── */
+  .wrap {
+    position:relative; z-index:10;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:2rem 1rem;
+  }
+
+  .screen { display:none; width:100%; max-width:560px; }
+  .screen.active { display:block; animation: fadeUp 0.6s ease both; }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(28px); }
+    to   { opacity:1; transform:translateY(0);    }
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--card);
+    backdrop-filter: blur(18px);
+    border-radius: 28px;
+    border: 1.5px solid rgba(232,160,160,0.4);
+    padding: 2.6rem 2.4rem;
+    box-shadow: 0 12px 60px rgba(180,80,110,0.12), 0 2px 8px rgba(180,80,110,0.06);
+  }
+
+  /* ── Bienvenida ── */
+  .welcome-label {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    letter-spacing: 0.18em;
+    color: var(--soft);
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  .welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .welcome-title span { color: var(--deep); }
+  .welcome-body {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #6a4050;
+    margin-bottom: 2rem;
+  }
+  .lives-preview {
+    display:flex; gap:0.4rem; margin-bottom:2rem;
+  }
+  .heart-icon { font-size:1.6rem; }
+
+  /* ── Botón principal ── */
+  .btn-main {
+    display: inline-flex; align-items:center; gap:0.5rem;
+    background: linear-gradient(135deg, var(--deep) 0%, #d06080 100%);
+    color: #fff;
+    border: none; border-radius: 50px;
+    padding: 0.95rem 2.4rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight:500;
+    cursor:pointer;
+    box-shadow: 0 6px 24px rgba(176,80,112,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-main:hover { transform:translateY(-2px); box-shadow:0 10px 32px rgba(176,80,112,0.45); }
+  .btn-main:active { transform:translateY(0); }
+
+  /* ── Quiz ── */
+  .quiz-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom: 1.8rem;
+  }
+  .progress-label {
+    font-size:0.78rem; letter-spacing:0.12em;
+    text-transform:uppercase; color: var(--soft);
+  }
+  .lives-row { display:flex; gap:0.35rem; }
+  .life { font-size:1.3rem; transition: transform 0.3s, filter 0.3s; }
+  .life.lost { filter:grayscale(1); transform:scale(0.8); }
+
+  .progress-bar-wrap {
+    height:5px; background:rgba(232,160,160,0.25);
+    border-radius:99px; margin-bottom:2rem; overflow:hidden;
+  }
+  .progress-bar-fill {
+    height:100%; background:linear-gradient(90deg, var(--soft), var(--deep));
+    border-radius:99px; transition:width 0.5s ease;
+  }
+
+  .question-num {
+    font-size:0.75rem; letter-spacing:0.15em;
+    text-transform:uppercase; color:var(--rose);
+    margin-bottom:0.6rem;
+  }
+  .question-text {
+    font-family:'Playfair Display', serif;
+    font-size:1.55rem; line-height:1.35;
+    color:var(--text); margin-bottom:1.8rem;
+  }
+
+  .options { display:grid; gap:0.75rem; }
+  .opt {
+    background: rgba(255,255,255,0.6);
+    border: 1.5px solid rgba(232,160,160,0.3);
+    border-radius:14px;
+    padding:1rem 1.2rem;
+    font-size:0.98rem; color:var(--text);
+    cursor:pointer; text-align:left;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    position:relative; overflow:hidden;
+  }
+  .opt:hover:not(.disabled) {
+    background:rgba(232,160,160,0.18);
+    border-color:var(--rose);
+    transform:translateX(4px);
+  }
+  .opt.correct {
+    background:rgba(120,200,140,0.25);
+    border-color:#78c88c;
+    color:#2a6b3a;
+  }
+  .opt.wrong {
+    background:rgba(220,100,100,0.2);
+    border-color:#dc6464;
+    color:#8b1f1f;
+  }
+  .opt.disabled { pointer-events:none; }
+
+  .feedback-msg {
+    text-align:center; font-size:1.5rem;
+    margin-top:1rem; min-height:2rem;
+    animation: pop 0.3s ease;
+  }
+  @keyframes pop {
+    0%   { transform:scale(0.5); opacity:0; }
+    70%  { transform:scale(1.15); }
+    100% { transform:scale(1); opacity:1; }
+  }
+
+  /* ── Victoria ── */
+  .win-title {
+    font-family:'Playfair Display',serif;
+    font-size:2rem; text-align:center;
+    color:var(--deep); margin-bottom:0.5rem;
+    line-height:1.25;
+  }
+  .win-sub {
+    text-align:center; color:#6a4050;
+    font-size:1.05rem; margin-bottom:2.2rem; line-height:1.6;
+  }
+
+  .val-question {
+    font-family:'Playfair Display',serif;
+    font-size:1.8rem; text-align:center;
+    color:var(--text); margin-bottom:1.8rem;
+  }
+
+  .val-btns { display:flex; justify-content:center; gap:1.5rem; flex-wrap:wrap; }
+  .btn-yes {
+    background:linear-gradient(135deg,var(--deep),#d06080);
+    color:#fff; border:none; border-radius:50px;
+    padding:1rem 2.4rem; font-size:1.1rem; font-weight:500;
+    cursor:pointer; font-family:'DM Sans',sans-serif;
+    box-shadow:0 6px 24px rgba(176,80,112,0.35);
+    transition:transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-yes:hover { transform:translateY(-2px); box-shadow:0 10px 32px rgba(176,80,112,0.45); }
+
+  .btn-no {
+    background:rgba(255,255,255,0.7);
+    color:var(--soft); border:1.5px solid var(--rose);
+    border-radius:50px; padding:1rem 2rem;
+    font-size:1rem; cursor:pointer;
+    font-family:'DM Sans',sans-serif;
+    transition:transform 0.15s;
+    position:fixed; /* necesario para moverlo por el viewport */
+  }
+
+  /* ── Pantalla de amor final ── */
+  .love-screen { text-align:center; }
+  .love-big { font-size:4rem; margin-bottom:1rem; animation:heartbeat 1s ease infinite; }
+  @keyframes heartbeat {
+    0%,100% { transform:scale(1); }
+    50%      { transform:scale(1.2); }
+  }
+  .love-title {
+    font-family:'Playfair Display',serif;
+    font-size:2.2rem; color:var(--deep);
+    margin-bottom:0.8rem; line-height:1.2;
+  }
+  .love-body { font-size:1.05rem; color:#6a4050; line-height:1.7; }
+  .confetti-piece {
+    position:fixed; pointer-events:none;
+    width:10px; height:10px; border-radius:2px;
+    animation: confettiFall 3s ease forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform:translateY(-20px) rotate(0deg);   opacity:1; }
+    100% { transform:translateY(110vh) rotate(720deg); opacity:0; }
+  }
+
+  /* ── Derrota ── */
+  .lose-title {
+    font-family:'Playfair Display',serif;
+    font-size:1.9rem; color:var(--deep);
+    margin-bottom:1rem; text-align:center;
+  }
+  .lose-body { text-align:center; color:#6a4050; font-size:1rem; line-height:1.7; margin-bottom:2rem; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:var(--rose); border-radius:99px; }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="petals" id="petals"></div>
+
+<div class="wrap">
+
+  <!-- ══ BIENVENIDA ══ -->
+  <div class="screen active" id="screen-welcome">
+    <div class="card">
+      <p class="welcome-label">14 de Febrero 💕</p>
+      <h1 class="welcome-title">Hola, <span>Eva.</span></h1>
+      <p class="welcome-body">
+        Sé que hoy es San Valentín...<br>
+        ¿Quieres ganarte tu regalo? 🎁<br><br>
+        Va a haber que esforzarse un poquito.
+        Demuéstrame que me conoces de verdad.
+      </p>
+      <div class="lives-preview">
+        <span class="heart-icon">❤️</span>
+        <span class="heart-icon">❤️</span>
+        <span class="heart-icon">❤️</span>
+        <span class="heart-icon">❤️</span>
+        <span class="heart-icon">❤️</span>
+        <span style="font-size:0.85rem;color:var(--soft);align-self:center;margin-left:6px;">— 5 vidas</span>
+      </div>
+      <button class="btn-main" onclick="startQuiz()">Acepto el reto ✨</button>
+    </div>
+  </div>
+
+  <!-- ══ QUIZ ══ -->
+  <div class="screen" id="screen-quiz">
+    <div class="card">
+      <div class="quiz-header">
+        <span class="progress-label" id="q-counter">Pregunta 1 / 10</span>
+        <div class="lives-row" id="lives-row"></div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+      </div>
+      <p class="question-num" id="q-num">01</p>
+      <p class="question-text" id="q-text"></p>
+      <div class="options" id="q-opts"></div>
+      <div class="feedback-msg" id="feedback"></div>
+    </div>
+  </div>
+
+  <!-- ══ VICTORIA ══ -->
+  <div class="screen" id="screen-win">
+    <div class="card">
+      <p style="text-align:center;font-size:2.5rem;margin-bottom:0.5rem">🎉</p>
+      <h2 class="win-title">¡Lo has conseguido, Eva!</h2>
+      <p class="win-sub">Me conoces más de lo que pensaba... o igual solo tuviste suerte 😏<br>Ahora viene la pregunta importante.</p>
+      <p class="val-question">¿Quieres ser mi San Valentín? 💕</p>
+      <div class="val-btns">
+        <button class="btn-yes" onclick="pressYes()">¡Sí, claro! 🥰</button>
+        <button class="btn-no" id="btn-no" onmouseenter="runNo()" ontouchstart="runNo()">No...</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ AMOR FINAL ══ -->
+  <div class="screen" id="screen-love">
+    <div class="card love-screen">
+      <div class="love-big">❤️</div>
+      <h2 class="love-title">Sabía que dirías que sí 🥹</h2>
+      <p class="love-body">
+        Feliz San Valentín, Eva.<br>
+        Prepárate para tu sorpresa... <br>
+        te lo mereces todo 💕
+      </p>
+    </div>
+  </div>
+
+  <!-- ══ DERROTA ══ -->
+  <div class="screen" id="screen-lose">
+    <div class="card" style="text-align:center">
+      <p style="font-size:2.5rem;margin-bottom:1rem">😤</p>
+      <h2 class="lose-title">Imposible...</h2>
+      <p class="lose-body">
+        Imposible que me conozcas tan poco, Eva.<br>
+        Te quedas sin regalo. 🚫🎁<br><br>
+        <em style="font-size:0.9rem;color:var(--rose)">(bueno... o puedes intentarlo otra vez 👀)</em>
+      </p>
+      <button class="btn-main" onclick="resetQuiz()">Volver a intentarlo 🔄</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Preguntas ──────────────────────────────────────────────
+const questions = [
+  {
+    q: "¿Cuál es mi equipo favorito?",
+    opts: ["Real Madrid", "Manchester United", "AC Milan", "Betis"],
+    ans: 0
+  },
+  {
+    q: "¿Cuál es mi anime favorito?",
+    opts: ["Naruto", "Demon Slayer", "Code Geass", "Attack on Titan"],
+    ans: 1
+  },
+  {
+    q: "¿Cuál es mi jugador de fútbol favorito?",
+    opts: ["Vini Jr", "Mbappé", "CR7", "Bellingham"],
+    ans: 2
+  },
+  {
+    q: "¿Cuál es mi marca favorita de ropa?",
+    opts: ["Scuffers", "Yuxus", "Cold Culture", "Eme Studios"],
+    ans: 3
+  },
+  {
+    q: "¿Cuál es mi cantante favorito en español?",
+    opts: ["Eladio Carrión", "Cruz Cafune", "Grecas", "Fernando Costa"],
+    ans: 0
+  },
+  {
+    q: "¿Cuál es mi cantante favorito en inglés?",
+    opts: ["Travis Scott", "Nemzzz", "Drake", "Central Cee"],
+    ans: 2
+  },
+  {
+    q: "¿Cuál es mi comida favorita?",
+    opts: ["Pizza", "Carne a la brasa", "Sushi", "Pasta"],
+    ans: 1
+  },
+  {
+    q: "¿Cuál es mi ciudad favorita?",
+    opts: ["Budapest", "Berlin", "Madrid", "Lisboa"],
+    ans: 3
+  },
+  {
+    q: "¿Cuál es mi cubata favorito?",
+    opts: ["Vodka con Red Bull de Sandía", "Jäger con Coca-Cola", "Ron con Coca-Cola", "Gin Tonic"],
+    ans: 1
+  },
+  {
+    q: "¿Cuál es mi videojuego favorito?",
+    opts: ["FIFA", "GTA", "Fortnite", "Minecraft"],
+    ans: 3
+  }
+];
+
+// ── Estado ────────────────────────────────────────────────
+let current = 0;
+let lives   = 5;
+let answered = false;
+
+// ── Pétalos ───────────────────────────────────────────────
+(function spawnPetals() {
+  const container = document.getElementById('petals');
+  const emojis = ['🌸','🌺','❤️','🌷','✨','💕'];
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('span');
+    p.className = 'petal';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (6 + Math.random() * 10) + 's';
+    p.style.animationDelay    = (Math.random() * 12) + 's';
+    p.style.fontSize = (0.8 + Math.random() * 0.8) + 'rem';
+    container.appendChild(p);
+  }
+})();
+
+// ── Pantallas ─────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Vidas ─────────────────────────────────────────────────
+function renderLives() {
+  const row = document.getElementById('lives-row');
+  row.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'life' + (i >= lives ? ' lost' : '');
+    s.textContent = i < lives ? '❤️' : '🖤';
+    row.appendChild(s);
+  }
+}
+
+// ── Iniciar quiz ──────────────────────────────────────────
+function startQuiz() {
+  current  = 0;
+  lives    = 5;
+  answered = false;
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function resetQuiz() { startQuiz(); }
+
+// ── Renderizar pregunta ───────────────────────────────────
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  document.getElementById('q-counter').textContent = `Pregunta ${current+1} / 10`;
+  document.getElementById('q-num').textContent = String(current+1).padStart(2,'0');
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('prog-bar').style.width = (current / 10 * 100) + '%';
+  renderLives();
+
+  const optsEl = document.getElementById('q-opts');
+  optsEl.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(i);
+    optsEl.appendChild(btn);
+  });
+}
+
+// ── Elegir respuesta ──────────────────────────────────────
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  const q    = questions[current];
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach(b => b.classList.add('disabled'));
+  opts[q.ans].classList.add('correct');
+
+  const fb = document.getElementById('feedback');
+
+  if (idx === q.ans) {
+    fb.textContent = 'Qué buena 😏';
+  } else {
+    opts[idx].classList.add('wrong');
+    lives--;
+    fb.textContent = 'Imposible... imposible... 😤';
+    renderLives();
+  }
+
+  setTimeout(() => {
+    if (lives <= 0) {
+      showScreen('screen-lose');
+    } else {
+      current++;
+      if (current >= questions.length) {
+        showScreen('screen-win');
+        placeNoButton();
+      } else {
+        renderQuestion();
+      }
+    }
+  }, 1400);
+}
+
+// ── Botón "No" que escapa ─────────────────────────────────
+function placeNoButton() {
+  const btn = document.getElementById('btn-no');
+  randomlyPlaceBtn(btn);
+}
+
+function randomlyPlaceBtn(btn) {
+  const margin = 80;
+  const x = margin + Math.random() * (window.innerWidth  - margin * 2);
+  const y = margin + Math.random() * (window.innerHeight - margin * 2);
+  btn.style.left = x + 'px';
+  btn.style.top  = y + 'px';
+}
+
+function runNo() {
+  randomlyPlaceBtn(document.getElementById('btn-no'));
+}
+
+// ── Pulsar Sí ─────────────────────────────────────────────
+function pressYes() {
+  launchConfetti();
+  showScreen('screen-love');
+}
+
+// ── Confeti ───────────────────────────────────────────────
+function launchConfetti() {
+  const colors = ['#e8a0a0','#b05070','#f5c6d0','#ffd700','#a0d8a0','#c9b1ff'];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.top  = '-10px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = Math.random() * 1.5 + 's';
+    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+    c.style.width  = (8 + Math.random() * 8) + 'px';
+    c.style.height = c.style.width;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4000);
+  }
+}
+</script>
+</body>
+</html>
